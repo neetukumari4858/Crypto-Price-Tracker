@@ -1,24 +1,66 @@
-import logo from './logo.svg';
-import './App.css';
+import "./App.css";
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 function App() {
+  const [data, setData] = useState({});
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get(
+          "https://api4.binance.com/api/v3/ticker/24hr"
+        );
+        const newData = response.data.reduce(
+          (accumulator, coinItem) => {
+            accumulator[coinItem.symbol] = [
+              coinItem,
+              ...(accumulator[coinItem.symbol] || []),
+            ];
+            return accumulator;
+          },
+          { ...data }
+        );
+
+        setData(newData);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+    const interval = setInterval(() => {
+      fetchData();
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [data]);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <>
+      <h1>Real-time Crypto Price Tracker</h1>
+      <div className="App">
+        {Object.keys(data).map((symbol) => (
+          <div key={symbol}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Symbol</th>
+                  <th>PriceChange</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data[symbol].map((coinItem, index) => (
+                  <tr key={index}>
+                    <td>{coinItem.symbol}</td>
+                    <td>{coinItem.priceChange}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 
